@@ -16,6 +16,11 @@
  */
 
 public class DesktopFolder.ItemView : Gtk.EventBox {
+    // Shared var for the cooldown operations (goto line 701)
+    public static int FINISHING_OPERATIONS = 0;
+
+    // Constant for a custom cooldown time.
+    private const long FINISH_OPERATION_TIMEOUT = 300000;
 
     // NOT SURE ABOUT THESE CONSTANTS!!! TODO!!!!!
     public const int PADDING_X       = 10;
@@ -597,6 +602,9 @@ public class DesktopFolder.ItemView : Gtk.EventBox {
      * @return bool @see on_release signal
      */
     private bool on_release (Gdk.EventButton event) {
+        // In the moment an item is released, a cooldown operation is started
+        FINISHING_OPERATIONS++;
+
         /*
            //TODO IF WE DO THIS ON PRESS EVENT, THE MOTION IS ALTERED
            //I'VE NOT FOUND A WAY TO ALTER THE Z ORDER WITHOUT REMOVING AND ADDING AGAIN FROM CONTAINER :(
@@ -688,6 +696,26 @@ public class DesktopFolder.ItemView : Gtk.EventBox {
             }
 
         }
+
+        /*
+            When an item is released, it seems that thera are some pending operations
+            that makes the program crash when the empty desktop is clicked.
+
+            So i've make this piece of shit until i discover what is making the
+            program crash, it just gives a cooldown of 0.3 sec, and stores it into a static variable,
+            so from FolderWindow.on_press() we can control this cooldown for preventing the program
+            to crash, for the moment it is only a temporary solution.
+        */
+        new Thread<int>.try ("Move cooldown thread.", () => {
+            try {
+                Thread.usleep (FINISH_OPERATION_TIMEOUT);
+                FINISHING_OPERATIONS--;
+                //debug ("FINISH OPERATION");
+            } catch (Error e) {
+                stderr.printf ("Error: %s\n", e.message);
+            }
+            return 0;
+        });
 
         return false;
     }

@@ -41,6 +41,16 @@ public class DesktopFolder.DesktopWindow : DesktopFolder.FolderWindow {
     }
 
     protected override bool on_press (Gdk.EventButton event) {
+        // Controlling the cooldown, will break here until all operations finish
+        // As the bug is only for Grid arrangement, we only apply the path when the Grid
+        // is enabled
+        // (goto ItemView.vala line 20)
+        FolderArrangementGrid fag = this.manager.get_arrangement () as FolderArrangementGrid;
+        if (fag != null && ItemView.FINISHING_OPERATIONS > 0) {
+            //debug ("WAIT plz");
+            return false;
+        }
+
         this.present ();
         if (event.type == Gdk.EventType.@2BUTTON_PRESS) {
             debug ("toggling desktop visiblity");
